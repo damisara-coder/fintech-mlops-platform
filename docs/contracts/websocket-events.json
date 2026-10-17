@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WebSocket Real-time Events Specification (P1 -> P4)",
+  "description": "Spécification des trames envoyées sur le canal ws:///ws/tx pour alimenter le Live Feed et les compteurs",
+  "version": "1.0.0",
+  "channel": "/ws/tx",
+  "event_types": {
+    "TX_DECIDED": {
+      "description": "Événement émis lorsqu'une transaction est évaluée",
+      "payload": {
+        "type": "object",
+        "required": ["type", "tx_id", "decision", "risk_score"],
+        "properties": {
+          "type": { "type": "string", "const": "TX_DECIDED" },
+          "tx_id": { "type": "string", "example": "TX-9F219" },
+          "client_name": { "type": "string", "example": "L. Benali" },
+          "amount": { "type": "string", "example": "550.00 €" },
+          "channel": { "type": "string", "example": "Card : ES (new)" },
+          "decision": {
+            "type": "string",
+            "enum": ["APPROVED", "BLOCKED", "HUMAN_REVIEW"],
+            "example": "HUMAN_REVIEW"
+          },
+          "risk_score": { "type": "integer", "example": 52 },
+          "model_version": { "type": "string", "example": "v4.2" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "QUEUE_UPDATED": {
+      "description": "Événement émis lors de l'ajout ou traitement d'une transaction dans la Human Review Queue",
+      "payload": {
+        "type": "object",
+        "required": ["type", "pending"],
+        "properties": {
+          "type": { "type": "string", "const": "QUEUE_UPDATED" },
+          "pending": { "type": "integer", "description": "Nombre de transactions en attente", "example": 318 }
+        }
+      }
+    },
+    "POD_EVENT": {
+      "description": "Événement émis pour démontrer l'auto-guérison et le scaling K8s sur le dashboard System Health",
+      "payload": {
+        "type": "object",
+        "required": ["type", "pod", "state"],
+        "properties": {
+          "type": { "type": "string", "const": "POD_EVENT" },
+          "pod": { "type": "string", "example": "risk-service-7d9f4c-3bnq6" },
+          "state": { "type": "string", "example": "Terminating -> new pod Scheduled" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,52 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: risk-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/fintech_db}
+    username: ${SPRING_DATASOURCE_USERNAME:fintech_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:fintech_pass}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+services:
+  ml-service:
+    url: ${ML_SERVICE_URL:http://localhost:8000}
+
+# Configuration Résilience (Resilience4j - Spécification §6.1 / §8.3)
+resilience4j:
+  timelimiter:
+    instances:
+      mlPrediction:
+        timeout-duration: 800ms
+        cancel-running-future: true
+  circuitbreaker:
+    instances:
+      mlPrediction:
+        sliding-window-size: 5
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 60
+        wait-duration-in-open-state: 10000ms
+        permitted-number-of-calls-in-half-open-state: 2
+  retry:
+    instances:
+      mlPrediction:
+        max-attempts: 2
+        wait-duration: 100ms
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true

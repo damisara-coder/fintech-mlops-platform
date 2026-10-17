@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Risk Score & Decision Contract (P1 -> Frontend P4)",
+  "description": "Contrat formel gelé en S1 pour l'appel de transaction-service vers risk-service POST /internal/v1/risk/score",
+  "version": "1.0.0",
+  "endpoint": {
+    "method": "POST",
+    "path": "/internal/v1/risk/score",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "request": {
+    "type": "object",
+    "required": [
+      "tx_id",
+      "customer_id",
+      "account_id",
+      "amount",
+      "currency",
+      "channel",
+      "merchant_category",
+      "ip_address"
+    ],
+    "properties": {
+      "tx_id": { "type": "string", "example": "TX-9F219" },
+      "customer_id": { "type": "string", "example": "CUST-10428" },
+      "account_id": { "type": "string", "example": "ACC-5521" },
+      "amount": { "type": "number", "example": 550.0 },
+      "currency": { "type": "string", "example": "EUR" },
+      "channel": { "type": "string", "example": "card" },
+      "merchant_category": { "type": "string", "example": "electronics_new" },
+      "ip_address": { "type": "string", "example": "194.22.10.5" }
+    }
+  },
+  "response": {
+    "status_code": 200,
+    "type": "object",
+    "required": [
+      "tx_id",
+      "decision",
+      "risk_score",
+      "risk_band",
+      "model_version",
+      "uncertainty",
+      "factors",
+      "audit_id",
+      "decided_at"
+    ],
+    "properties": {
+      "tx_id": { "type": "string", "example": "TX-9F219" },
+      "decision": {
+        "type": "string",
+        "enum": ["APPROVED", "BLOCKED", "HUMAN_REVIEW"],
+        "example": "HUMAN_REVIEW"
+      },
+      "risk_score": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "example": 52
+      },
+      "risk_band": {
+        "type": "string",
+        "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+        "example": "MEDIUM"
+      },
+      "model_version": { "type": "string", "example": "v4.2" },
+      "uncertainty": { "type": "number", "example": 0.34 },
+      "factors": {
+        "type": "array",
+        "description": "Contributions locales des features issues de SHAP",
+        "items": {
+          "type": "object",
+          "required": ["f", "c"],
+          "properties": {
+            "f": { "type": "string", "description": "Nom de la variable", "example": "merchant_cat" },
+            "c": { "type": "number", "description": "Contribution SHAP au score", "example": 0.31 }
+          }
+        }
+      },
+      "audit_id": { "type": "string", "example": "a-88213" },
+      "decided_at": { "type": "string", "format": "date-time", "example": "2026-12-05T03:12:44Z" }
+    }
+  }
+}

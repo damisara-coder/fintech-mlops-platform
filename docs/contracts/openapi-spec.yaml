@@ -1,0 +1,240 @@
+openapi: 3.0.3
+info:
+  title: FinTech MLOps Platform API Specification
+  description: Spécification officielle et figée des APIs de la plateforme FinTech MLOps (Contrat v1.0).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: API Gateway Locale
+  - url: https://api.fintech-mlops.internal
+    description: Ingress Kubernetes
+
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Authentification et obtention du token JWT
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  example: "amina@bank-fintech.com"
+                password:
+                  type: string
+                  example: "Secr3tPassword!"
+      responses:
+        '200':
+          description: Authentification réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  role:
+                    type: string
+                    enum: [ANALYST, RISK_OPS, DEV, ADMIN]
+                    example: "ANALYST"
+                  expires_in:
+                    type: integer
+                    example: 3600
+        '401':
+          description: Identifiants invalides
+
+  /api/v1/transactions:
+    post:
+      summary: Soumission d'une nouvelle transaction bancaire
+      tags: [Transactions]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [account_id, amount, currency, channel, merchant_category, ip_address]
+              properties:
+                account_id:
+                  type: string
+                  example: "ACC-5521"
+                amount:
+                  type: number
+                  example: 550.00
+                currency:
+                  type: string
+                  example: "EUR"
+                channel:
+                  type: string
+                  enum: [card, wire, sepa]
+                  example: "card"
+                merchant_category:
+                  type: string
+                  example: "electronics_new"
+                ip_address:
+                  type: string
+                  example: "194.22.10.5"
+      responses:
+        '202':
+          description: Transaction enregistrée et en cours d'évaluation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tx_id:
+                    type: string
+                    example: "TX-9F219"
+                  status:
+                    type: string
+                    example: "PENDING"
+
+  /internal/v1/risk/score:
+    post:
+      summary: Évaluation de risque par le Risk Service
+      tags: [Internal Risk]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskScoreRequest'
+      responses:
+        '200':
+          description: Décision de risque calculée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskScoreResponse'
+
+  /api/v1/transactions/human-review:
+    get:
+      summary: Liste des transactions en attente de revue humaine
+      tags: [Human Review]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: File d'attente ordonnée par incertitude décroissante
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RiskScoreResponse'
+
+  /api/v1/transactions/{id}/review:
+    post:
+      summary: Décision d'un analyste sur une transaction en revue
+      tags: [Human Review]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision:
+                  type: string
+                  enum: [APPROVED, REJECTED, ESCALATED]
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Décision enregistrée et transmise à l'audit-service
+
+  /api/v1/audit/{txId}:
+    get:
+      summary: Récupération du journal immuable et hash chaîné pour une transaction
+      tags: [Audit]
+      parameters:
+        - name: txId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Enregistrement d'audit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audit_id:
+                    type: string
+                    example: "a-88213"
+                  tx_id:
+                    type: string
+                    example: "TX-9F219"
+                  previous_hash:
+                    type: string
+                    example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                  current_hash:
+                    type: string
+                    example: "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4"
+                  event_type:
+                    type: string
+                    example: "TRANSACTION_EVALUATED"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RiskScoreRequest:
+      type: object
+      properties:
+        tx_id: { type: string }
+        customer_id: { type: string }
+        account_id: { type: string }
+        amount: { type: number }
+        currency: { type: string }
+        channel: { type: string }
+        merchant_category: { type: string }
+        ip_address: { type: string }
+
+    RiskScoreResponse:
+      type: object
+      properties:
+        tx_id: { type: string, example: "TX-9F219" }
+        decision:
+          type: string
+          enum: [APPROVED, BLOCKED, HUMAN_REVIEW]
+          example: "HUMAN_REVIEW"
+        risk_score: { type: integer, example: 52 }
+        risk_band: { type: string, example: "MEDIUM" }
+        model_version: { type: string, example: "v4.2" }
+        uncertainty: { type: number, example: 0.34 }
+        factors:
+          type: array
+          items:
+            type: object
+            properties:
+              f: { type: string, example: "merchant_cat" }
+              c: { type: number, example: 0.31 }
+        audit_id: { type: string, example: "a-88213" }
+        decided_at: { type: string, format: date-time }
