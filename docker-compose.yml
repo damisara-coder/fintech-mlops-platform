@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # =========================================================================
+  # Base de données PostgreSQL pour les microservices FinTech (Tâche P1.1)
+  # =========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: fintech-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: fintech_db
+      POSTGRES_USER: fintech_user
+      POSTGRES_PASSWORD: fintech_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Initialisation automatique : le script data-model.sql est exécuté au premier démarrage
+      - ./docs/architecture/data-model.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fintech_user -d fintech_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
