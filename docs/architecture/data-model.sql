@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     balance NUMERIC(15, 2) DEFAULT 0.00,
     status VARCHAR(20) DEFAULT 'ACTIVE', -- ACTIVE, SUSPENDED, FROZEN
     opened_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    account_age_days INT GENERATED ALWAYS AS (DATE_PART('day', NOW() - opened_at)) STORED
+    account_age_days INT DEFAULT 0
 );
 
 -- -------------------------------------------------------------------------
