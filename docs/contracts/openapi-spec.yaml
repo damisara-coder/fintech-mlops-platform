@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: FinTech MLOps Platform API Specification
-  description: Spécification officielle et figée des APIs de la plateforme FinTech MLOps (Contrat v1.0).
-  version: 1.0.0
+  description: Spécification officielle et figée des APIs de la plateforme FinTech MLOps (Contrat v1.1 - Validé avec Profil 4 Frontend).
+  version: 1.1.0
 servers:
   - url: http://localhost:8080
     description: API Gateway Locale
@@ -10,6 +10,9 @@ servers:
     description: Ingress Kubernetes
 
 paths:
+  # =========================================================================
+  # AUTHENTIFICATION & UTILISATEURS
+  # =========================================================================
   /api/v1/auth/login:
     post:
       summary: Authentification et obtention du token JWT
@@ -20,17 +23,23 @@ paths:
           application/json:
             schema:
               type: object
-              required: [username, password]
+              required: [password]
               properties:
+                email:
+                  type: string
+                  example: "amina@bank-fintech.com"
                 username:
                   type: string
                   example: "amina@bank-fintech.com"
                 password:
                   type: string
                   example: "Secr3tPassword!"
+                organization:
+                  type: string
+                  example: "Risk Operations"
       responses:
         '200':
-          description: Authentification réussie
+          description: Authentification réussie avec profil utilisateur complet
           content:
             application/json:
               schema:
@@ -43,15 +52,27 @@ paths:
                     type: string
                     enum: [ANALYST, RISK_OPS, DEV, ADMIN]
                     example: "ANALYST"
+                  name:
+                    type: string
+                    example: "Amina"
+                  email:
+                    type: string
+                    example: "amina@bank-fintech.com"
+                  organization:
+                    type: string
+                    example: "Risk Operations"
                   expires_in:
                     type: integer
                     example: 3600
         '401':
           description: Identifiants invalides
 
+  # =========================================================================
+  # TRANSACTIONS BANCAIRES & SIMULATEUR
+  # =========================================================================
   /api/v1/transactions:
     post:
-      summary: Soumission d'une nouvelle transaction bancaire
+      summary: Soumission d'une nouvelle transaction bancaire (Flux Asynchrone de Production)
       tags: [Transactions]
       security:
         - BearerAuth: []
@@ -79,12 +100,15 @@ paths:
                 merchant_category:
                   type: string
                   example: "electronics_new"
+                merchant_name:
+                  type: string
+                  example: "ElectroShop Paris"
                 ip_address:
                   type: string
                   example: "194.22.10.5"
       responses:
         '202':
-          description: Transaction enregistrée et en cours d'évaluation
+          description: Transaction enregistrée immédiatement en statut PENDING
           content:
             application/json:
               schema:
@@ -96,44 +120,117 @@ paths:
                   status:
                     type: string
                     example: "PENDING"
+                  message:
+                    type: string
+                    example: "Transaction enregistrée et en cours d'évaluation de risque"
 
-  /internal/v1/risk/score:
-    post:
-      summary: Évaluation de risque par le Risk Service
-      tags: [Internal Risk]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RiskScoreRequest'
-      responses:
-        '200':
-          description: Décision de risque calculée
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RiskScoreResponse'
-
-  /api/v1/transactions/human-review:
     get:
-      summary: Liste des transactions en attente de revue humaine
-      tags: [Human Review]
+      summary: Liste des transactions récentes pour le flux historique
+      tags: [Transactions]
       security:
         - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: status
+          in: query
+          schema:
+            type: string
       responses:
         '200':
-          description: File d'attente ordonnée par incertitude décroissante
+          description: Liste des transactions
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RiskScoreResponse'
+                  $ref: '#/components/schemas/TransactionItem'
+
+  /api/v1/transactions/{id}:
+    get:
+      summary: Consultation du statut et détails d'une transaction par son ID
+      tags: [Transactions]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Détail complet de la transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDetail'
+        '404':
+          description: Transaction non trouvée
+
+  /api/v1/transactions/simulate:
+    post:
+      summary: Simulateur de paiement synchrone (Maquette 6 - Idéal pour la démo)
+      tags: [Transactions]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scenario]
+              properties:
+                scenario:
+                  type: string
+                  enum: [normal, fraud, uncertain, custom]
+                  example: "uncertain"
+                amount:
+                  type: number
+                  example: 550.00
+                currency:
+                  type: string
+                  example: "EUR"
+                country:
+                  type: string
+                  example: "ES"
+                merchant_category:
+                  type: string
+                  example: "electronics_new"
+      responses:
+        '200':
+          description: Résultat synchrone immédiat traversant toute la chaîne technique
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResult'
+
+  # =========================================================================
+  # HUMAN REVIEW QUEUE (MAQUETTE 3 - ÉCRAN CENTRAL)
+  # =========================================================================
+  /api/v1/transactions/human-review:
+    get:
+      summary: File d'attente Human Review complète (Maquette 3 - Triée par incertitude décroissante)
+      tags: [Human Review]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste enrichie des transactions en attente avec contexte client, modèle et explicabilité SHAP
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HumanReviewItem'
 
   /api/v1/transactions/{id}/review:
     post:
-      summary: Décision d'un analyste sur une transaction en revue
+      summary: Trancher une transaction en revue humaine (Approuver / Rejeter / Escalader)
       tags: [Human Review]
       security:
         - BearerAuth: []
@@ -154,15 +251,111 @@ paths:
                 decision:
                   type: string
                   enum: [APPROVED, REJECTED, ESCALATED]
+                  example: "APPROVED"
                 comment:
                   type: string
+                  example: "Vérification client effectuée, historique sans incident."
       responses:
         '200':
-          description: Décision enregistrée et transmise à l'audit-service
+          description: Décision enregistrée dans le journal immuable et labelisée pour le ré-entraînement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "SUCCESS"
+                  tx_id:
+                    type: string
+                    example: "TX-9F219"
+                  final_decision:
+                    type: string
+                    example: "APPROVED"
+                  audit_id:
+                    type: string
+                    example: "a-88213"
 
+  # =========================================================================
+  # DASHBOARD & KPIS (MAQUETTE 2)
+  # =========================================================================
+  /api/v1/dashboard/kpis:
+    get:
+      summary: Les 5 indicateurs clés du haut du Dashboard (Maquette 2)
+      tags: [Dashboard]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: KPIs temps réel sur 24h
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardKpis'
+
+  # =========================================================================
+  # SYSTEM HEALTH & OBSERVABILITÉ (MAQUETTE 5)
+  # =========================================================================
+  /api/v1/system/health:
+    get:
+      summary: État de santé du cluster, pods, scaling HPA et Model Registry (Maquette 5)
+      tags: [System Health]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Métriques agrégées pour la console SRE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemHealthData'
+
+  # =========================================================================
+  # ML ANALYTICS & EXPLICABILITÉ (MAQUETTE 4 - PROFIL 2)
+  # =========================================================================
+  /api/v1/analytics/umap:
+    get:
+      summary: Coordonnées 2D/3D UMAP/PCA des 8 000 points du dataset (généré par P2)
+      tags: [ML Analytics]
+      responses:
+        '200':
+          description: Nuage de points interactif avec clusters légitimes, fraude et zone d'incertitude
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_points:
+                    type: integer
+                    example: 8000
+                  points:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        x: { type: number }
+                        y: { type: number }
+                        label: { type: string, enum: [legitimate, fraud, uncertain] }
+                        tx_id: { type: string }
+
+  /api/v1/analytics/benchmark:
+    get:
+      summary: Résultats comparatifs des 5 modèles ML et tests statistiques (P2)
+      tags: [ML Analytics]
+      responses:
+        '200':
+          description: Tableau benchmark (ROC-AUC, PR-AUC, F1, MCC, latence) et p-values (Friedman/Wilcoxon)
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # =========================================================================
+  # AUDIT SERVICE (JOURNAL IMMUABLE SHA-256)
+  # =========================================================================
   /api/v1/audit/{txId}:
     get:
-      summary: Récupération du journal immuable et hash chaîné pour une transaction
+      summary: Traçabilité réglementaire et preuve de hash chaîné
       tags: [Audit]
       parameters:
         - name: txId
@@ -178,24 +371,12 @@ paths:
               schema:
                 type: object
                 properties:
-                  audit_id:
-                    type: string
-                    example: "a-88213"
-                  tx_id:
-                    type: string
-                    example: "TX-9F219"
-                  previous_hash:
-                    type: string
-                    example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-                  current_hash:
-                    type: string
-                    example: "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4"
-                  event_type:
-                    type: string
-                    example: "TRANSACTION_EVALUATED"
-                  timestamp:
-                    type: string
-                    format: date-time
+                  audit_id: { type: string, example: "a-88213" }
+                  tx_id: { type: string, example: "TX-9F219" }
+                  previous_hash: { type: string }
+                  current_hash: { type: string }
+                  event_type: { type: string }
+                  timestamp: { type: string, format: date-time }
 
 components:
   securitySchemes:
@@ -205,36 +386,131 @@ components:
       bearerFormat: JWT
 
   schemas:
-    RiskScoreRequest:
+    DashboardKpis:
       type: object
       properties:
-        tx_id: { type: string }
-        customer_id: { type: string }
-        account_id: { type: string }
-        amount: { type: number }
-        currency: { type: string }
-        channel: { type: string }
-        merchant_category: { type: string }
-        ip_address: { type: string }
+        transactions_24h: { type: integer, example: 184392 }
+        transactions_trend: { type: string, example: "+4.2% vs hier" }
+        blocked_fraud: { type: integer, example: 1204 }
+        blocked_ratio: { type: string, example: "0.65% du volume" }
+        human_review_queue: { type: integer, example: 318 }
+        human_review_trend: { type: string, example: "+41 en 1h" }
+        ml_latency_p95: { type: integer, example: 42 }
+        ml_latency_target: { type: integer, example: 50 }
+        pods_running: { type: string, example: "14/14" }
+        hpa_status: { type: string, example: "min 4 -> max 12 (actif)" }
 
-    RiskScoreResponse:
+    TransactionItem:
+      type: object
+      properties:
+        id: { type: string, example: "TX-9F219" }
+        amount: { type: number, example: 550.00 }
+        currency: { type: string, example: "EUR" }
+        channel: { type: string, example: "card" }
+        merchant_name: { type: string, example: "ElectroShop" }
+        status: { type: string, example: "PENDING" }
+        created_at: { type: string, format: date-time }
+
+    TransactionDetail:
+      type: object
+      properties:
+        id: { type: string, example: "TX-9F219" }
+        account_id: { type: string, example: "ACC-5521" }
+        amount: { type: number, example: 550.00 }
+        currency: { type: string, example: "EUR" }
+        channel: { type: string, example: "card" }
+        merchant_name: { type: string, example: "ElectroShop" }
+        merchant_category: { type: string, example: "electronics_new" }
+        ip_address: { type: string, example: "194.22.10.5" }
+        status: { type: string, example: "EVALUATED" }
+        decision: { type: string, example: "HUMAN_REVIEW" }
+        created_at: { type: string, format: date-time }
+
+    SimulationResult:
       type: object
       properties:
         tx_id: { type: string, example: "TX-9F219" }
-        decision:
-          type: string
-          enum: [APPROVED, BLOCKED, HUMAN_REVIEW]
-          example: "HUMAN_REVIEW"
-        risk_score: { type: integer, example: 52 }
-        risk_band: { type: string, example: "MEDIUM" }
+        status: { type: string, example: "HUMAN_REVIEW" }
+        probability: { type: number, example: 0.52 }
+        uncertainty_score: { type: number, example: 0.34 }
+        is_uncertain: { type: boolean, example: true }
+        conformal_interval:
+          type: array
+          items: { type: number }
+          example: [0.48, 0.56]
         model_version: { type: string, example: "v4.2" }
-        uncertainty: { type: number, example: 0.34 }
-        factors:
+        latency_ms: { type: integer, example: 38 }
+        audit_id: { type: string, example: "a-88213" }
+
+    HumanReviewItem:
+      type: object
+      required: [tx_id, client, transaction, model_evaluation, shap_factors]
+      properties:
+        tx_id: { type: string, example: "TX-9F219" }
+        client:
+          type: object
+          properties:
+            id: { type: string, example: "CUST-10428" }
+            name: { type: string, example: "L. Benali" }
+            account_age_days: { type: integer, example: 2190 }
+            total_transactions: { type: integer, example: 214 }
+            fraud_history: { type: integer, example: 0 }
+            confidence_score: { type: number, example: 0.99 }
+        transaction:
+          type: object
+          properties:
+            amount: { type: number, example: 550.00 }
+            currency: { type: string, example: "EUR" }
+            channel: { type: string, example: "Card : ES (new)" }
+            merchant_category: { type: string, example: "electronics_new" }
+            country: { type: string, example: "ES" }
+            hour: { type: integer, example: 3 }
+            is_recurring_merchant: { type: boolean, example: false }
+            three_d_secure_passed: { type: boolean, example: true }
+            created_at: { type: string, format: date-time }
+        model_evaluation:
+          type: object
+          properties:
+            decision: { type: string, enum: [APPROVED, BLOCKED, HUMAN_REVIEW], example: "HUMAN_REVIEW" }
+            predicted_class: { type: string, example: "FRAUDE" }
+            probability: { type: number, example: 0.52 }
+            uncertainty_score: { type: number, example: 0.34 }
+            conformal_interval:
+              type: array
+              items: { type: number }
+              example: [0.48, 0.56]
+            model_version: { type: string, example: "v4.2" }
+        shap_factors:
           type: array
           items:
             type: object
             properties:
-              f: { type: string, example: "merchant_cat" }
-              c: { type: number, example: 0.31 }
-        audit_id: { type: string, example: "a-88213" }
-        decided_at: { type: string, format: date-time }
+              feature: { type: string, example: "merchant_category = electronics_new" }
+              contribution: { type: number, example: 0.31 }
+              type: { type: string, enum: [fraud_risk, safe, neutral], example: "fraud_risk" }
+        queue_sla_remaining_minutes: { type: integer, example: 4 }
+
+    SystemHealthData:
+      type: object
+      properties:
+        api_gateway_rps: { type: integer, example: 1842 }
+        p95_latency_ms: { type: integer, example: 118 }
+        error_rate: { type: number, example: 0.003 }
+        replicas_active: { type: integer, example: 6 }
+        ml_latency_ms: { type: integer, example: 38 }
+        model_active_version: { type: string, example: "v4.2" }
+        pods:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string, example: "risk-service-7d9f4c-4bk2p" }
+              ready: { type: string, example: "2/2 Running" }
+              status: { type: string, example: "Ready" }
+        hpa_events:
+          type: array
+          items:
+            type: object
+            properties:
+              event: { type: string, example: "ScaleUp risk-service 4->6 replicas (CPU 78% > target 60%)" }
+              timestamp: { type: string }

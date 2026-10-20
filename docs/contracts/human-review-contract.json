@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Human Review Queue Item Contract (P1 -> P4)",
+  "description": "Contrat formel gelé pour l'écran Human Review (Maquette 3) retourné par GET /api/v1/transactions/human-review",
+  "version": "1.0.0",
+  "endpoint": {
+    "method": "GET",
+    "path": "/api/v1/transactions/human-review"
+  },
+  "response": {
+    "status_code": 200,
+    "type": "array",
+    "items": {
+      "type": "object",
+      "required": ["tx_id", "client", "transaction", "model_evaluation", "shap_factors"],
+      "properties": {
+        "tx_id": { "type": "string", "example": "TX-9F219" },
+        "client": {
+          "type": "object",
+          "required": ["id", "name", "account_age_days", "total_transactions", "fraud_history"],
+          "properties": {
+            "id": { "type": "string", "example": "CUST-10428" },
+            "name": { "type": "string", "example": "L. Benali" },
+            "account_age_days": { "type": "integer", "example": 2190 },
+            "total_transactions": { "type": "integer", "example": 214 },
+            "fraud_history": { "type": "integer", "example": 0 },
+            "confidence_score": { "type": "number", "example": 0.99 }
+          }
+        },
+        "transaction": {
+          "type": "object",
+          "required": ["amount", "currency", "channel", "merchant_category", "country", "hour"],
+          "properties": {
+            "amount": { "type": "number", "example": 550.00 },
+            "currency": { "type": "string", "example": "EUR" },
+            "channel": { "type": "string", "example": "Card : ES (new)" },
+            "merchant_category": { "type": "string", "example": "electronics_new" },
+            "country": { "type": "string", "example": "ES" },
+            "hour": { "type": "integer", "example": 3 },
+            "is_recurring_merchant": { "type": "boolean", "example": false },
+            "three_d_secure_passed": { "type": "boolean", "example": true },
+            "created_at": { "type": "string", "format": "date-time", "example": "2026-12-05T03:12:44Z" }
+          }
+        },
+        "model_evaluation": {
+          "type": "object",
+          "required": ["decision", "predicted_class", "probability", "uncertainty_score", "conformal_interval", "model_version"],
+          "properties": {
+            "decision": { "type": "string", "enum": ["APPROVED", "BLOCKED", "HUMAN_REVIEW"], "example": "HUMAN_REVIEW" },
+            "predicted_class": { "type": "string", "example": "FRAUDE" },
+            "probability": { "type": "number", "example": 0.52 },
+            "uncertainty_score": { "type": "number", "example": 0.34 },
+            "conformal_interval": {
+              "type": "array",
+              "items": { "type": "number" },
+              "minItems": 2,
+              "maxItems": 2,
+              "example": [0.48, 0.56]
+            },
+            "model_version": { "type": "string", "example": "v4.2" }
+          }
+        },
+        "shap_factors": {
+          "type": "array",
+          "description": "Contributions locales des caractéristiques au score pour expliquer le doute du modèle",
+          "items": {
+            "type": "object",
+            "required": ["feature", "contribution", "type"],
+            "properties": {
+              "feature": { "type": "string", "example": "merchant_category = electronics_new" },
+              "contribution": { "type": "number", "example": 0.31 },
+              "type": { "type": "string", "enum": ["fraud_risk", "safe", "neutral"], "example": "fraud_risk" }
+            }
+          }
+        },
+        "queue_sla_remaining_minutes": {
+          "type": "integer",
+          "description": "Temps restant avant expiration du SLA de revue",
+          "example": 4
+        }
+      }
+    }
+  }
+}

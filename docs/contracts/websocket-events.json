@@ -2,14 +2,15 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "WebSocket Real-time Events Specification (P1 -> P4)",
   "description": "Spécification des trames envoyées sur le canal ws:///ws/tx pour alimenter le Live Feed et les compteurs",
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "protocol": "Pure WebSocket (JSON framing, text messages)",
   "channel": "/ws/tx",
   "event_types": {
     "TX_DECIDED": {
-      "description": "Événement émis lorsqu'une transaction est évaluée",
+      "description": "Événement émis lorsqu'une transaction est évaluée par risk-service (alimente le Live Feed et informe le Simulateur)",
       "payload": {
         "type": "object",
-        "required": ["type", "tx_id", "decision", "risk_score"],
+        "required": ["type", "tx_id", "decision", "risk_score", "probability", "uncertainty_score"],
         "properties": {
           "type": { "type": "string", "const": "TX_DECIDED" },
           "tx_id": { "type": "string", "example": "TX-9F219" },
@@ -22,19 +23,30 @@
             "example": "HUMAN_REVIEW"
           },
           "risk_score": { "type": "integer", "example": 52 },
+          "probability": { "type": "number", "example": 0.52 },
+          "uncertainty_score": { "type": "number", "example": 0.34 },
+          "is_uncertain": { "type": "boolean", "example": true },
+          "conformal_interval": {
+            "type": "array",
+            "items": { "type": "number" },
+            "example": [0.48, 0.56]
+          },
           "model_version": { "type": "string", "example": "v4.2" },
+          "latency_ms": { "type": "integer", "example": 38 },
+          "audit_id": { "type": "string", "example": "a-88213" },
           "timestamp": { "type": "string", "format": "date-time" }
         }
       }
     },
     "QUEUE_UPDATED": {
-      "description": "Événement émis lors de l'ajout ou traitement d'une transaction dans la Human Review Queue",
+      "description": "Événement émis lors de l'ajout ou du traitement d'une transaction dans la Human Review Queue",
       "payload": {
         "type": "object",
         "required": ["type", "pending"],
         "properties": {
           "type": { "type": "string", "const": "QUEUE_UPDATED" },
-          "pending": { "type": "integer", "description": "Nombre de transactions en attente", "example": 318 }
+          "pending": { "type": "integer", "description": "Nombre de transactions en attente dans la file", "example": 318 },
+          "delta": { "type": "integer", "description": "+1 ou -1", "example": 1 }
         }
       }
     },
