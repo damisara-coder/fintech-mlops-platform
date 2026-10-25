@@ -35,3 +35,23 @@ mlops-serving/
 ├── requirements.txt        # fastapi, uvicorn, pydantic, mlflow, prometheus-client
 └── README.md
 ```
+
+## MLflow (T5)
+
+Lancer le serveur (depuis mlops-serving/, venv activé) :
+
+    mlflow server --host 127.0.0.1 --port 5000 --backend-store-uri sqlite:///mlflow-data/mlflow.db --default-artifact-root ./mlflow-data/artifacts
+
+UI : http://127.0.0.1:5000
+Initialiser les experiments : python init_experiments.py
+
+Experiments : fraud-benchmark, fraud-uncertainty, fraud-champion
+Registry : None -> Staging -> Production -> Archived
+
+## Service FastAPI (contrat avec P1 et P5)
+
+- Port : 8000
+- Lancement : uvicorn app.main:app --host 0.0.0.0 --port 8000
+- Endpoints : POST /predict, GET /health, GET /metrics
+- Variables d'environnement : MODEL_URI, SIMULATE_DELAY_MS, SIMULATE_ERROR_RATE
+- Tests : pytest -q (depuis mlops-serving/)
