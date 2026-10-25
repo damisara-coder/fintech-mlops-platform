@@ -94,6 +94,9 @@ venv.bak/
 # MLflow & Large Datasets
 mlruns/
 mlartifacts/
+mlflow-data/
+*.db
+requirements-lock.txt
 *.joblib
 *.pkl
 *.h5
