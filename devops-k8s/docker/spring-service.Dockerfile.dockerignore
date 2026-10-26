@@ -1,0 +1,6 @@
+**/target
+**/.mvn/wrapper/*.jar
+**/*.log
+**/*.txt
+.idea
+.vscode
