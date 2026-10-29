@@ -9,7 +9,6 @@ export interface Factor {
   c: number
 }
 
-// Ce que le contrat gelé garantit (RiskScoreResponse)
 export interface RiskScoreResponse {
   tx_id: string
   decision: Decision
@@ -22,8 +21,7 @@ export interface RiskScoreResponse {
   decided_at: string
 }
 
-// Ce dont l'écran a besoin en plus.
-// Le "?" veut dire : pas garanti par le contrat, on affiche "n/a" si absent.
+// Ce que l'ECRAN utilise. Les "?" : on affiche "n/a" si l'info manque.
 export interface ReviewItem extends RiskScoreResponse {
   client_name?: string
   amount?: number
@@ -33,4 +31,43 @@ export interface ReviewItem extends RiskScoreResponse {
   history?: string
   probability?: number
   interval?: [number, number]
+  sla_minutes?: number
+}
+
+// Ce que le BACKEND envoie (contrat gelé human-review-contract.json)
+export interface HumanReviewDto {
+  tx_id: string
+  client: {
+    id: string
+    name: string
+    account_age_days: number
+    total_transactions: number
+    fraud_history: number
+    confidence_score?: number
+  }
+  transaction: {
+    amount: number
+    currency: string
+    channel: string
+    merchant_category: string
+    country: string
+    hour: number
+    is_recurring_merchant?: boolean
+    three_d_secure_passed?: boolean
+    created_at?: string
+  }
+  model_evaluation: {
+    decision: Decision
+    predicted_class: string
+    probability: number
+    uncertainty_score: number
+    conformal_interval: [number, number]
+    model_version: string
+  }
+  shap_factors: {
+    feature: string
+    contribution: number
+    type: 'fraud_risk' | 'safe' | 'neutral'
+  }[]
+  queue_sla_remaining_minutes?: number
 }
