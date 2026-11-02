@@ -5,6 +5,7 @@ import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 from .model_loader import load_predictor
@@ -30,11 +31,14 @@ app = FastAPI(title="Fraud ML Serving", version="1.0.0", lifespan=lifespan)
 @app.get("/health")
 def health(request: Request):
     p = getattr(request.app.state, "predictor", None)
-    return {
-        "status": "ok" if p else "degraded",
-        "model_loaded": p is not None,
-        "model_version": p.version if p else None,
+    loaded = p is not None
+    body = {
+        "status": "ok" if loaded else "unavailable",
+        "model_loaded": loaded,
+        "model_version": p.version if loaded else None,
     }
+    return JSONResponse(status_code=200 if loaded else 503, content=body)
+
 
 
 @app.get("/metrics")
