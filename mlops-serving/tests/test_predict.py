@@ -34,3 +34,27 @@ def test_health_and_metrics():
     with TestClient(app) as c:
         assert c.get("/health").json()["model_loaded"] is True
         assert "predict_requests_total" in c.get("/metrics").text
+
+
+
+def test_health_returns_200_when_model_loaded():
+    with TestClient(app) as c:
+        r = c.get("/health")
+    assert r.status_code == 200
+    assert r.json()["status"] == "ok"
+    assert r.json()["model_loaded"] is True
+
+
+def test_health_returns_503_when_model_missing():
+    with TestClient(app) as c:
+        original = app.state.predictor
+        app.state.predictor = None
+        try:
+            r = c.get("/health")
+        finally:
+            app.state.predictor = original
+    assert r.status_code == 503
+    body = r.json()
+    assert body["status"] == "unavailable"
+    assert body["model_loaded"] is False
+    assert body["model_version"] is None
