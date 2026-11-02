@@ -1,8 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "FastAPI Predict Contract (P3 -> P1)",
-  "description": "Contrat formel gelé en S1 pour l'appel de risk-service vers FastAPI POST /predict",
-  "version": "1.0.0",
+  "description": "Contrat de l'appel risk-service vers FastAPI POST /predict. v2.0.0 : l'entrée passe aux 29 features du dataset Credit Card Fraud (schéma P2 1.0.0).",
+  "version": "2.0.0",
+  "changelog": "2.0.0 (breaking) : request = {tx_id, features{V1..V28, Amount}} ; anciens champs (amount, currency, channel, ip_country, ip_risk, merchant_cat, hour, account_age_days) supprimés. Réponse inchangée.",
   "endpoint": {
     "method": "POST",
     "path": "/predict",
@@ -12,63 +13,13 @@
   },
   "request": {
     "type": "object",
-    "required": [
-      "tx_id",
-      "amount",
-      "currency",
-      "channel",
-      "ip_country",
-      "ip_risk",
-      "merchant_cat",
-      "hour",
-      "account_age_days"
-    ],
+    "additionalProperties": false,
+    "required": ["tx_id", "features"],
     "properties": {
-      "tx_id": {
-        "type": "string",
-        "example": "TX-9F219"
-      },
-      "amount": {
-        "type": "number",
-        "minimum": 0.01,
-        "example": 550.0
-      },
-      "currency": {
-        "type": "string",
-        "pattern": "^[A-Z]{3}$",
-        "example": "EUR"
-      },
-      "channel": {
-        "type": "string",
-        "enum": ["card", "wire", "sepa", "transfer"],
-        "example": "card"
-      },
-      "ip_country": {
-        "type": "string",
-        "minLength": 2,
-        "maxLength": 2,
-        "example": "ES"
-      },
-      "ip_risk": {
-        "type": "number",
-        "minimum": 0.0,
-        "maximum": 1.0,
-        "example": 0.61
-      },
-      "merchant_cat": {
-        "type": "string",
-        "example": "electronics_new"
-      },
-      "hour": {
-        "type": "integer",
-        "minimum": 0,
-        "maximum": 23,
-        "example": 3
-      },
-      "account_age_days": {
-        "type": "integer",
-        "minimum": 0,
-        "example": 2190
+      "tx_id": { "type": "string", "minLength": 1, "example": "TX-9F219" },
+      "features": {
+        "description": "29 features brutes. Schéma complet : docs/contracts/fraud-features/feature_input.schema.json (V1..V28 numériques, Amount >= 0, aucun autre champ, Time exclue).",
+        "$ref": "fraud-features/feature_input.schema.json"
       }
     }
   },
@@ -121,7 +72,7 @@
       "model_version": {
         "type": "string",
         "description": "Version du modèle actif dans MLflow",
-        "example": "v4.2"
+        "example": "dummy-0.2"
       },
       "latency_ms": {
         "type": "integer",
