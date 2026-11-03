@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Risk Score & Decision Contract (P1 -> Frontend P4)",
-  "description": "Contrat formel gelé en S1 pour l'appel de transaction-service vers risk-service POST /internal/v1/risk/score",
-  "version": "1.0.0",
+  "description": "Contrat formel gelé en S1 pour l'appel de transaction-service vers risk-service POST /internal/v1/risk/score (avec transport des 29 features)",
+  "version": "1.1.0",
   "endpoint": {
     "method": "POST",
     "path": "/internal/v1/risk/score",
@@ -30,7 +30,19 @@
       "currency": { "type": "string", "example": "EUR" },
       "channel": { "type": "string", "example": "card" },
       "merchant_category": { "type": "string", "example": "electronics_new" },
-      "ip_address": { "type": "string", "example": "194.22.10.5" }
+      "ip_address": { "type": "string", "example": "194.22.10.5" },
+      "features": {
+        "type": "object",
+        "description": "29 variables numériques pour le modèle ML (V1..V28 + Amount). Optionnel si généré par défaut.",
+        "additionalProperties": { "type": "number" },
+        "example": {
+          "Amount": 550.0,
+          "V1": -1.3598,
+          "V2": -0.0727,
+          "V14": -0.3111,
+          "V17": 0.2079
+        }
+      }
     }
   },
   "response": {
@@ -69,12 +81,12 @@
       "uncertainty": { "type": "number", "example": 0.34 },
       "factors": {
         "type": "array",
-        "description": "Contributions locales des features issues de SHAP",
+        "description": "Contributions locales des features issues de SHAP (ex: V14, V17, Amount, etc.)",
         "items": {
           "type": "object",
           "required": ["f", "c"],
           "properties": {
-            "f": { "type": "string", "description": "Nom de la variable", "example": "merchant_cat" },
+            "f": { "type": "string", "description": "Nom de la variable (ex: V14, Amount)", "example": "V14" },
             "c": { "type": "number", "description": "Contribution SHAP au score", "example": 0.31 }
           }
         }
