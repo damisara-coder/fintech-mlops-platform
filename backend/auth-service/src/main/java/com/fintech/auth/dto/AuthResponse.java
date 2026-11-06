@@ -10,6 +10,10 @@ import lombok.*;
 @Builder
 public class AuthResponse {
     private String token;
+
+    @JsonProperty("refresh_token")
+    private String refreshToken;
+
     private String role;
     private String email;
     private String organization;

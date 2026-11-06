@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: FinTech MLOps Platform API Specification
-  description: Spécification officielle et figée des APIs de la plateforme FinTech MLOps (Contrat v1.1 - Validé avec Profil 4 Frontend).
-  version: 1.1.0
+  description: Spécification officielle et figée des APIs de la plateforme FinTech MLOps (Contrat v1.2 - Support 29 features ULB anonymisées).
+  version: 1.2.0
 servers:
   - url: http://localhost:8080
     description: API Gateway Locale
@@ -48,6 +48,9 @@ paths:
                   token:
                     type: string
                     example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  refresh_token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                   role:
                     type: string
                     enum: [ANALYST, RISK_OPS, DEV, ADMIN]
@@ -66,6 +69,44 @@ paths:
                     example: 3600
         '401':
           description: Identifiants invalides
+
+  /api/v1/auth/refresh:
+    post:
+      summary: Rafraîchissement du jeton d'accès via le refresh token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Nouveau token d'accès généré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  role:
+                    type: string
+                  email:
+                    type: string
+                  organization:
+                    type: string
+                  expires_in:
+                    type: integer
+        '401':
+          description: Refresh token invalide ou expiré
 
   # =========================================================================
   # TRANSACTIONS BANCAIRES & SIMULATEUR
@@ -106,6 +147,15 @@ paths:
                 ip_address:
                   type: string
                   example: "194.22.10.5"
+                features:
+                  type: object
+                  description: "29 variables numériques (V1..V28 + Amount) transmises au modèle ML"
+                  additionalProperties:
+                    type: number
+                  example:
+                    Amount: 550.00
+                    V1: -1.3598
+                    V14: -0.3111
       responses:
         '202':
           description: Transaction enregistrée immédiatement en statut PENDING
@@ -201,6 +251,11 @@ paths:
                 merchant_category:
                   type: string
                   example: "electronics_new"
+                features:
+                  type: object
+                  description: "29 variables numériques (V1..V28 + Amount) personnalisées"
+                  additionalProperties:
+                    type: number
       responses:
         '200':
           description: Résultat synchrone immédiat traversant toute la chaîne technique
@@ -422,6 +477,10 @@ components:
         merchant_name: { type: string, example: "ElectroShop" }
         merchant_category: { type: string, example: "electronics_new" }
         ip_address: { type: string, example: "194.22.10.5" }
+        features:
+          type: object
+          description: "29 features numériques (V1..V28 + Amount)"
+          additionalProperties: { type: number }
         status: { type: string, example: "EVALUATED" }
         decision: { type: string, example: "HUMAN_REVIEW" }
         created_at: { type: string, format: date-time }
@@ -467,6 +526,10 @@ components:
             hour: { type: integer, example: 3 }
             is_recurring_merchant: { type: boolean, example: false }
             three_d_secure_passed: { type: boolean, example: true }
+            features:
+              type: object
+              description: "29 features numériques (V1..V28 + Amount)"
+              additionalProperties: { type: number }
             created_at: { type: string, format: date-time }
         model_evaluation:
           type: object
@@ -485,7 +548,7 @@ components:
           items:
             type: object
             properties:
-              feature: { type: string, example: "merchant_category = electronics_new" }
+              feature: { type: string, example: "V14 = -0.3111" }
               contribution: { type: number, example: 0.31 }
               type: { type: string, enum: [fraud_risk, safe, neutral], example: "fraud_risk" }
         queue_sla_remaining_minutes: { type: integer, example: 4 }
