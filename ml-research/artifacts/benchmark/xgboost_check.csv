@@ -1,0 +1,6 @@
+variante,PR-AUC,valeurs distinctes,sain
+défaut,0.8868,54617,True
+base_score=0.5,0.8892,53921,True
+tree_method=approx,0.8811,54637,True
+min_child_weight=0.01,0.8726,54287,True
+base_score=0.5 + min_child_weight=0.01,0.8881,53329,True
