@@ -1,0 +1,59 @@
+{
+  "model_version": "provisional-0.1.0",
+  "status": "provisional - sera remplace par le champion (P2.7)",
+  "model_type": "LogisticRegression (max_iter=1000) dans un sklearn Pipeline",
+  "trained_on": "lot d'entrainement, seed 42",
+  "input_columns": [
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+    "V7",
+    "V8",
+    "V9",
+    "V10",
+    "V11",
+    "V12",
+    "V13",
+    "V14",
+    "V15",
+    "V16",
+    "V17",
+    "V18",
+    "V19",
+    "V20",
+    "V21",
+    "V22",
+    "V23",
+    "V24",
+    "V25",
+    "V26",
+    "V27",
+    "V28",
+    "Amount"
+  ],
+  "how_to_predict": "pipeline.predict_proba(DataFrame avec input_columns)[:, 1] = probabilite de fraude",
+  "metrics_on_calibration_set": {
+    "pr_auc": 0.7978,
+    "roc_auc": 0.9747,
+    "mcc_seuil_0.5": 0.7723
+  },
+  "latency_single_row": {
+    "median_ms": 10.93,
+    "p95_ms": 15.82
+  },
+  "uncertainty": {
+    "type": "placeholder",
+    "score": "1 - abs(2p - 1)",
+    "is_uncertain_if": "score >= 0.6",
+    "note": "remplace par le conformal (MAPIE) dans le modele champion"
+  },
+  "versions": {
+    "python": "3.11.9",
+    "scikit-learn": "1.9.1",
+    "pandas": "2.3.3",
+    "numpy": "2.4.3"
+  }
+}

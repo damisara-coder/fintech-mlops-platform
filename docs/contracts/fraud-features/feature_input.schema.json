@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fintech-mlops.local/schemas/fraud-features/1.0.0",
+  "title": "Features d'entrée du modèle de détection de fraude",
+  "description": "Colonnes BRUTES attendues par le pipeline (prétraitement + modèle). Time est volontairement exclue (décision P2.2).",
+  "x-schema-version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "V1": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V2": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V3": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V4": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V5": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V6": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V7": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V8": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V9": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V10": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V11": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V12": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V13": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V14": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V15": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V16": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V17": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V18": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V19": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V20": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V21": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V22": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V23": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V24": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V25": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V26": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V27": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "V28": {
+      "type": "number",
+      "description": "Composante PCA anonymisée (variable d'origine inconnue)."
+    },
+    "Amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Montant de la transaction en euros (brut, non transformé). Le pipeline applique lui-même log(1 + x) puis la standardisation."
+    }
+  },
+  "required": [
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+    "V7",
+    "V8",
+    "V9",
+    "V10",
+    "V11",
+    "V12",
+    "V13",
+    "V14",
+    "V15",
+    "V16",
+    "V17",
+    "V18",
+    "V19",
+    "V20",
+    "V21",
+    "V22",
+    "V23",
+    "V24",
+    "V25",
+    "V26",
+    "V27",
+    "V28",
+    "Amount"
+  ],
+  "additionalProperties": false
+}

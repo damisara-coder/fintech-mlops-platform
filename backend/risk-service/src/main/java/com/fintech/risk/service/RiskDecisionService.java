@@ -18,7 +18,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -46,17 +48,21 @@ public class RiskDecisionService {
     public RiskScoreResponse evaluateRisk(RiskScoreRequest request) {
         long startTime = System.currentTimeMillis();
 
-        // 1. Préparation de la requête pour FastAPI selon docs/contracts/predict-contract.json
+        // 1. Préparation de la requête pour FastAPI selon docs/contracts/predict-contract.json v2.0.0
+        Map<String, Double> features = request.getFeatures();
+        if (features == null || features.isEmpty()) {
+            features = new HashMap<>();
+            features.put("Amount", request.getAmount() != null ? request.getAmount().doubleValue() : 100.0);
+            for (int i = 1; i <= 28; i++) {
+                features.put("V" + i, 0.0);
+            }
+        } else if (!features.containsKey("Amount") && request.getAmount() != null) {
+            features.put("Amount", request.getAmount().doubleValue());
+        }
+
         PredictRequest predictRequest = PredictRequest.builder()
                 .txId(request.getTxId())
-                .amount(request.getAmount())
-                .currency(request.getCurrency() != null ? request.getCurrency() : "EUR")
-                .channel(request.getChannel())
-                .ipCountry("ES")
-                .ipRisk(new BigDecimal("0.61"))
-                .merchantCat(request.getMerchantCategory() != null ? request.getMerchantCategory() : "electronics_new")
-                .hour(3)
-                .accountAgeDays(2190)
+                .features(features)
                 .build();
 
         // 2. Appel asynchrone / non bloquant avec timeout strict de 800 ms
@@ -98,10 +104,10 @@ public class RiskDecisionService {
 
         // Facteurs explicatifs SHAP pour la console d'audit / revue humaine
         List<FactorContribution> factors = List.of(
-                FactorContribution.builder().f("merchant_category").c(0.31).build(),
-                FactorContribution.builder().f("ip_risk").c(0.22).build(),
-                FactorContribution.builder().f("hour_deviation").c(0.14).build(),
-                FactorContribution.builder().f("account_age_days").c(-0.18).build()
+                FactorContribution.builder().f("V14").c(-0.31).build(),
+                FactorContribution.builder().f("V17").c(0.22).build(),
+                FactorContribution.builder().f("Amount").c(0.18).build(),
+                FactorContribution.builder().f("V12").c(-0.14).build()
         );
 
         // Sauvegarde de la décision en base PostgreSQL
