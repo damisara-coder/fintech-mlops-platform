@@ -1,0 +1,7 @@
+**/__pycache__
+**/*.pyc
+.venv
+venv
+mlflow-data
+tests
+**/*.db
