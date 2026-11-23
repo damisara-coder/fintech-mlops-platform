@@ -1,14 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "FastAPI Predict Contract (P3 -> P1)",
-<<<<<<< HEAD
-  "description": "Contrat de l'appel risk-service vers FastAPI POST /predict. v2.0.0 : l'entrée passe aux 29 features du dataset Credit Card Fraud (schéma P2 1.0.0).",
-  "version": "2.0.0",
-  "changelog": "2.0.0 (breaking) : request = {tx_id, features{V1..V28, Amount}} ; anciens champs (amount, currency, channel, ip_country, ip_risk, merchant_cat, hour, account_age_days) supprimés. Réponse inchangée.",
-=======
   "description": "Contrat formel gelé pour l'appel de risk-service vers FastAPI POST /predict (Support 29 features ULB anonymisées V1..V28 + Amount)",
   "version": "2.0.0",
->>>>>>> 6ece6bd23ba056f462833c1e3d8d7869af127cf3
   "endpoint": {
     "method": "POST",
     "path": "/predict",
@@ -18,15 +12,6 @@
   },
   "request": {
     "type": "object",
-<<<<<<< HEAD
-    "additionalProperties": false,
-    "required": ["tx_id", "features"],
-    "properties": {
-      "tx_id": { "type": "string", "minLength": 1, "example": "TX-9F219" },
-      "features": {
-        "description": "29 features brutes. Schéma complet : docs/contracts/fraud-features/feature_input.schema.json (V1..V28 numériques, Amount >= 0, aucun autre champ, Time exclue).",
-        "$ref": "fraud-features/feature_input.schema.json"
-=======
     "required": [
       "tx_id",
       "features"
@@ -72,7 +57,6 @@
           "V28": { "type": "number", "example": -0.0210 }
         },
         "additionalProperties": true
->>>>>>> 6ece6bd23ba056f462833c1e3d8d7869af127cf3
       }
     }
   },
@@ -125,7 +109,7 @@
       "model_version": {
         "type": "string",
         "description": "Version du modèle actif dans MLflow",
-        "example": "dummy-0.2"
+        "example": "v4.2"
       },
       "latency_ms": {
         "type": "integer",
