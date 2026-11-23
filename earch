@@ -1,0 +1,15 @@
+[33m7019db0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat(backend): implement customer and transaction services with simulation and risk dispatch (P1.4)
+[33m0e2fc8d[m Merge pull request #5 from damisara-coder/p5/k8s-customer-service
+[33m816bf23[m Merge pull request #2 from damisara-coder/p5/cluster-local
+[33m747b4d5[m Merge pull request #3 from damisara-coder/p5/dockerfile-customer-service
+[33mc031c9f[m Merge pull request #9 from damisara-coder/p5/monitoring-prometheus
+[33m65d6a2c[m Merge pull request #6 from damisara-coder/p5/k8s-autres-services
+[33mdebf2b2[m Merge pull request #10 from damisara-coder/p5/dockerfile-ml-service
+[33mf42a8d8[m Merge pull request #13 from damisara-coder/p5/k8s-ml-service
+[33m244f41e[m[33m ([m[1;31morigin/p5/dockerfile-customer-service[m[33m)[m Merge remote-tracking branch 'origin/main' into p5/dockerfile-customer-service
+[33m25a54bb[m[33m ([m[1;31morigin/p5/k8s-ml-service[m[33m)[m feat(devops): manifests Kubernetes de ml-service (ConfigMap, Deployment, Service, probes /health)
+[33m002b9f9[m[33m ([m[1;31morigin/p5/dockerfile-ml-service[m[33m)[m Merge remote-tracking branch 'origin/main' into p5/dockerfile-ml-service
+[33mfc17671[m Merge pull request #8 from damisara-coder/p2/preparation
+[33m358bab4[m[33m ([m[1;31morigin/p2/preparation[m[33m)[m feat(ml): P2.3 modele provisoire, P2.4 benchmark des 5 modeles
+[33m270ac8c[m Merge branch 'main' of https://github.com/damisara-coder/fintech-mlops-platform into p2/preparation
+[33m6ece6bd[m feat(contracts,auth): adapt contracts for 29 ML features and implement refresh token in auth-service (P1.2 & P1.3)
