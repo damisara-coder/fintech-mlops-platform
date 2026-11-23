@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FastAPI Predict Contract (P3 -> P1)",
+  "description": "Contrat formel gelé pour l'appel de risk-service vers FastAPI POST /predict (Support 29 features ULB anonymisées V1..V28 + Amount)",
+  "version": "2.0.0",
+  "endpoint": {
+    "method": "POST",
+    "path": "/predict",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "request": {
+    "type": "object",
+    "required": [
+      "tx_id",
+      "features"
+    ],
+    "properties": {
+      "tx_id": {
+        "type": "string",
+        "example": "TX-9F219"
+      },
+      "features": {
+        "type": "object",
+        "description": "Vecteur des 29 variables numériques du dataset anonymisé (V1..V28 + Amount)",
+        "required": ["Amount"],
+        "properties": {
+          "Amount": { "type": "number", "example": 550.0 },
+          "V1": { "type": "number", "example": -1.3598 },
+          "V2": { "type": "number", "example": -0.0727 },
+          "V3": { "type": "number", "example": 2.5363 },
+          "V4": { "type": "number", "example": 1.3781 },
+          "V5": { "type": "number", "example": -0.3383 },
+          "V6": { "type": "number", "example": 0.4623 },
+          "V7": { "type": "number", "example": 0.2395 },
+          "V8": { "type": "number", "example": 0.0986 },
+          "V9": { "type": "number", "example": 0.3637 },
+          "V10": { "type": "number", "example": 0.0907 },
+          "V11": { "type": "number", "example": -0.5515 },
+          "V12": { "type": "number", "example": -0.6178 },
+          "V13": { "type": "number", "example": -0.9913 },
+          "V14": { "type": "number", "example": -0.3111 },
+          "V15": { "type": "number", "example": 1.4681 },
+          "V16": { "type": "number", "example": -0.4704 },
+          "V17": { "type": "number", "example": 0.2079 },
+          "V18": { "type": "number", "example": 0.0257 },
+          "V19": { "type": "number", "example": 0.4039 },
+          "V20": { "type": "number", "example": 0.2514 },
+          "V21": { "type": "number", "example": -0.0183 },
+          "V22": { "type": "number", "example": 0.2778 },
+          "V23": { "type": "number", "example": -0.1104 },
+          "V24": { "type": "number", "example": 0.0669 },
+          "V25": { "type": "number", "example": 0.1285 },
+          "V26": { "type": "number", "example": -0.1891 },
+          "V27": { "type": "number", "example": 0.1335 },
+          "V28": { "type": "number", "example": -0.0210 }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "response": {
+    "status_code": 200,
+    "type": "object",
+    "required": [
+      "prediction",
+      "probability",
+      "uncertainty_score",
+      "is_uncertain",
+      "interval",
+      "model_version",
+      "latency_ms"
+    ],
+    "properties": {
+      "prediction": {
+        "type": "integer",
+        "enum": [0, 1],
+        "description": "0 = Légitime, 1 = Fraude",
+        "example": 1
+      },
+      "probability": {
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "description": "Probabilité prédite de fraude",
+        "example": 0.52
+      },
+      "uncertainty_score": {
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "description": "Score d'incertitude issu de MAPIE (Conformal Prediction)",
+        "example": 0.34
+      },
+      "is_uncertain": {
+        "type": "boolean",
+        "description": "true si l'incertitude dépasse le seuil alpha (ex: 0.05)",
+        "example": true
+      },
+      "interval": {
+        "type": "array",
+        "items": { "type": "number" },
+        "minItems": 2,
+        "maxItems": 2,
+        "description": "Intervalle de prédiction conforme [borne_inf, borne_sup]",
+        "example": [0.48, 0.56]
+      },
+      "model_version": {
+        "type": "string",
+        "description": "Version du modèle actif dans MLflow",
+        "example": "v4.2"
+      },
+      "latency_ms": {
+        "type": "integer",
+        "description": "Temps de calcul de l'inférence en millisecondes",
+        "example": 38
+      }
+    }
+  }
+}
