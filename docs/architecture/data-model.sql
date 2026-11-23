@@ -1,5 +1,5 @@
 -- =========================================================================
--- Schéma Relationnel PostgreSQL - Plateforme FinTech MLOps (Tâche P1.1)
+-- Schéma Relationnel PostgreSQL - Plateforme FinTech MLOps (Tâche P1.1 / P1.4)
 -- Base de données : fintech_db
 -- =========================================================================
 
@@ -50,12 +50,15 @@ CREATE TABLE IF NOT EXISTS transactions (
     ip_country VARCHAR(2),
     ip_risk NUMERIC(5, 4) DEFAULT 0.0,
     status VARCHAR(30) DEFAULT 'PENDING', -- PENDING, EVALUATED, FAILED
+    decision VARCHAR(30), -- APPROVED, BLOCKED, HUMAN_REVIEW
+    risk_score INT,       -- 0 à 100
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index pour optimiser les filtres UI et les agrégations du Dashboard
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
+CREATE INDEX IF NOT EXISTS idx_transactions_decision ON transactions(decision);
 CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);
 
 -- -------------------------------------------------------------------------

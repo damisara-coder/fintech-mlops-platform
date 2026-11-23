@@ -51,6 +51,12 @@ public class Transaction {
     @Builder.Default
     private String status = "PENDING"; // PENDING, EVALUATED, FAILED
 
+    @Column(length = 30)
+    private String decision; // APPROVED, BLOCKED, HUMAN_REVIEW
+
+    @Column(name = "risk_score")
+    private Integer riskScore; // 0 à 100
+
     @Column(name = "created_at")
     @Builder.Default
     private Instant createdAt = Instant.now();
