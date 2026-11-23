@@ -49,15 +49,13 @@ public class RiskDecisionService {
         long startTime = System.currentTimeMillis();
 
         // 1. Préparation de la requête pour FastAPI selon docs/contracts/predict-contract.json v2.0.0
-        Map<String, Double> features = request.getFeatures();
-        if (features == null || features.isEmpty()) {
-            features = new HashMap<>();
+        // Garantit que les 29 features attendues (V1..V28 + Amount) sont TOUTES présentes
+        Map<String, Double> features = request.getFeatures() != null ? new HashMap<>(request.getFeatures()) : new HashMap<>();
+        if (!features.containsKey("Amount")) {
             features.put("Amount", request.getAmount() != null ? request.getAmount().doubleValue() : 100.0);
-            for (int i = 1; i <= 28; i++) {
-                features.put("V" + i, 0.0);
-            }
-        } else if (!features.containsKey("Amount") && request.getAmount() != null) {
-            features.put("Amount", request.getAmount().doubleValue());
+        }
+        for (int i = 1; i <= 28; i++) {
+            features.putIfAbsent("V" + i, 0.0);
         }
 
         PredictRequest predictRequest = PredictRequest.builder()
