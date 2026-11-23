@@ -6,31 +6,67 @@ spring:
     name: api-gateway
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins:
+              - "http://localhost:5173"
+              - "http://localhost:3000"
+              - "http://localhost:80"
+              - "http://127.0.0.1:5173"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowed-headers:
+              - Authorization
+              - Content-Type
+              - Accept
+              - X-Requested-With
+              - Origin
+            allow-credentials: true
       routes:
+        # Auth Service (authentification, tokens, register, login)
         - id: auth-service
-          uri: http://localhost:8081
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/api/v1/auth/**
+
+        # Customer Service (clients, comptes bancaires)
         - id: customer-service
-          uri: http://localhost:8082
+          uri: ${CUSTOMER_SERVICE_URL:http://localhost:8082}
           predicates:
             - Path=/api/v1/customers/**, /api/v1/accounts/**
+
+        # Transaction Service (création transactions, historique, simulateur)
         - id: transaction-service
-          uri: http://localhost:8083
+          uri: ${TRANSACTION_SERVICE_URL:http://localhost:8083}
           predicates:
             - Path=/api/v1/transactions/**
+
+        # Risk Service (évaluation de risque, scoring)
         - id: risk-service
-          uri: http://localhost:8084
+          uri: ${RISK_SERVICE_URL:http://localhost:8084}
           predicates:
-            - Path=/api/v1/risk/**
+            - Path=/api/v1/risk/**, /internal/v1/risk/**
+
+        # Notification Service (WebSocket & diffusion temps réel)
         - id: notification-service
-          uri: http://localhost:8085
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
           predicates:
-            - Path=/ws/**
+            - Path=/ws/**, /api/v1/notifications/**
+
+        # Audit Service (journal immuable SHA-256)
         - id: audit-service
-          uri: http://localhost:8086
+          uri: ${AUDIT_SERVICE_URL:http://localhost:8086}
           predicates:
             - Path=/api/v1/audit/**
+
+jwt:
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
 
 management:
   endpoints:
