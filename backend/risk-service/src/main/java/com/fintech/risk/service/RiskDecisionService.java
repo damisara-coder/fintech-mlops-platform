@@ -79,7 +79,7 @@ public class RiskDecisionService {
     /**
      * Application stricte de la règle de décision bancaire (§4.1 du document de cadrage)
      */
-    private RiskScoreResponse applyDecisionPolicy(RiskScoreRequest request, PredictResponse mlResponse, int latencyMs) {
+    public RiskScoreResponse applyDecisionPolicy(RiskScoreRequest request, PredictResponse mlResponse, int latencyMs) {
         double proba = mlResponse != null && mlResponse.getProbability() != null ? mlResponse.getProbability() : 0.5;
         boolean isUncertain = mlResponse != null && Boolean.TRUE.equals(mlResponse.getIsUncertain());
         double uncertainty = mlResponse != null && mlResponse.getUncertaintyScore() != null ? mlResponse.getUncertaintyScore() : 0.0;

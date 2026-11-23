@@ -20,14 +20,20 @@ public class TransactionProcessingService {
     private static final Logger log = LoggerFactory.getLogger(TransactionProcessingService.class);
 
     private final TransactionRepository transactionRepository;
-    private final WebClient webClient;
+    private final WebClient riskWebClient;
+    private final WebClient auditWebClient;
+    private final WebClient notificationWebClient;
 
     public TransactionProcessingService(
             TransactionRepository transactionRepository,
             WebClient.Builder webClientBuilder,
-            @Value("${services.risk-service.url:http://localhost:8084}") String riskServiceUrl) {
+            @Value("${services.risk-service.url:http://localhost:8084}") String riskServiceUrl,
+            @Value("${services.audit-service.url:http://localhost:8086}") String auditServiceUrl,
+            @Value("${services.notification-service.url:http://localhost:8085}") String notificationServiceUrl) {
         this.transactionRepository = transactionRepository;
-        this.webClient = webClientBuilder.baseUrl(riskServiceUrl).build();
+        this.riskWebClient = webClientBuilder.baseUrl(riskServiceUrl).build();
+        this.auditWebClient = webClientBuilder.baseUrl(auditServiceUrl).build();
+        this.notificationWebClient = webClientBuilder.baseUrl(notificationServiceUrl).build();
     }
 
     /**
@@ -61,7 +67,7 @@ public class TransactionProcessingService {
     }
 
     /**
-     * Appel asynchrone à risk-service
+     * Appel asynchrone à risk-service puis cascade vers audit-service et notification-service
      */
     private void dispatchRiskEvaluationAsync(Transaction tx, Map<String, Double> features) {
         RiskScoreClientRequest riskRequest = RiskScoreClientRequest.builder()
@@ -76,7 +82,7 @@ public class TransactionProcessingService {
                 .features(features)
                 .build();
 
-        webClient.post()
+        riskWebClient.post()
                 .uri("/internal/v1/risk/score")
                 .bodyValue(riskRequest)
                 .retrieve()
@@ -89,13 +95,18 @@ public class TransactionProcessingService {
                             tx.setRiskScore(riskResponse.getRiskScore());
                             transactionRepository.save(tx);
                             log.info("Transaction {} évaluée avec succès : décision={}", tx.getId(), riskResponse.getDecision());
+
+                            // Cascade événementielle asynchrone
+                            dispatchAuditAndNotification(tx, riskResponse.getDecision(), riskResponse.getRiskScore(), riskResponse.getAuditId());
                         },
                         error -> {
-                            log.warn("Échec d'évaluation du risque pour {} : {}", tx.getId(), error.getMessage());
+                            log.warn("Échec d'évaluation du risque pour {} : {}, bascule en fallback", tx.getId(), error.getMessage());
                             tx.setStatus("EVALUATED");
                             tx.setDecision("HUMAN_REVIEW"); // Fallback dégradé sécurisé
                             tx.setRiskScore(50);
                             transactionRepository.save(tx);
+
+                            dispatchAuditAndNotification(tx, "HUMAN_REVIEW", 50, "a-fallback");
                         }
                 );
     }
@@ -161,7 +172,7 @@ public class TransactionProcessingService {
 
         RiskScoreClientResponse riskResponse;
         try {
-            riskResponse = webClient.post()
+            riskResponse = riskWebClient.post()
                     .uri("/internal/v1/risk/score")
                     .bodyValue(riskRequest)
                     .retrieve()
@@ -186,6 +197,9 @@ public class TransactionProcessingService {
         transaction.setRiskScore(riskResponse.getRiskScore());
         transactionRepository.save(transaction);
 
+        // Diffusion asynchrone audit et websocket
+        dispatchAuditAndNotification(transaction, riskResponse.getDecision(), riskResponse.getRiskScore(), riskResponse.getAuditId());
+
         int latencyMs = (int) (System.currentTimeMillis() - startTime);
 
         return SimulationResponse.builder()
@@ -199,5 +213,59 @@ public class TransactionProcessingService {
                 .latencyMs(latencyMs > 0 ? latencyMs : 38)
                 .auditId(riskResponse.getAuditId())
                 .build();
+    }
+
+    /**
+     * Dispatch événementiel vers audit-service et notification-service
+     */
+    private void dispatchAuditAndNotification(Transaction tx, String decision, Integer riskScore, String auditId) {
+        // 1. Audit log
+        try {
+            Map<String, Object> auditPayload = Map.of(
+                    "transaction_id", tx.getId(),
+                    "event_type", "RISK_EVALUATED",
+                    "payload_json", String.format("{\"decision\":\"%s\",\"risk_score\":%d,\"amount\":%s}", decision, riskScore != null ? riskScore : 0, tx.getAmount()),
+                    "actor", "SYSTEM"
+            );
+            auditWebClient.post()
+                    .uri("/api/v1/audit/log")
+                    .bodyValue(auditPayload)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .timeout(Duration.ofMillis(1000))
+                    .subscribe(
+                            res -> log.debug("Audit log envoyé avec succès pour {}", tx.getId()),
+                            err -> log.debug("Audit service non joignable (normal en local sans container): {}", err.getMessage())
+                    );
+        } catch (Exception e) {
+            log.debug("Exception dispatch audit: {}", e.getMessage());
+        }
+
+        // 2. Notification WebSocket temps réel
+        try {
+            Map<String, Object> notifPayload = Map.of(
+                    "type", "TX_DECIDED",
+                    "tx_id", tx.getId(),
+                    "client_name", "Client FinTech",
+                    "amount", tx.getAmount() + " " + tx.getCurrency(),
+                    "channel", tx.getChannel(),
+                    "decision", decision,
+                    "risk_score", riskScore != null ? riskScore : 0,
+                    "audit_id", auditId != null ? auditId : "a-88213",
+                    "timestamp", Instant.now().toString()
+            );
+            notificationWebClient.post()
+                    .uri("/api/v1/notifications/broadcast")
+                    .bodyValue(notifPayload)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .timeout(Duration.ofMillis(1000))
+                    .subscribe(
+                            res -> log.debug("Notification diffusée avec succès pour {}", tx.getId()),
+                            err -> log.debug("Notification service non joignable (normal en local sans container): {}", err.getMessage())
+                    );
+        } catch (Exception e) {
+            log.debug("Exception dispatch notification: {}", e.getMessage());
+        }
     }
 }
